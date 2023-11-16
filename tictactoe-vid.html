@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe</title>
+
+  <style>
+    body {
+      display: flex ;
+      flex-direction: column ;
+      justify-content: center ;
+      align-items: center ;
+      height: 100vh ;
+      overflow: hidden ;
+      font-family: Arial, Helvetica, sans-serif ;
+      background: rgb(0, 0, 0) ;
+    }
+
+    button {
+      background: rgb(255, 255, 255) ;
+      border: none ;
+      color: rgb(0, 0, 0) ;
+      font-size: 20px ;
+      font-weight: 900 ;
+      padding: 10px 15px ;
+      cursor: pointer ;
+      border-radius: 10px ;
+      box-shadow: 1.5px 1.5px 1.5px rgba(0, 0, 0, 0.5) ;
+      margin-top: 10px ;
+    }
+
+    button:active {
+      box-shadow: none ;
+    }
+
+    #text {
+      position: absolute ;
+      top: 10px ;
+      font-size: 40px ;
+      font-weight: bold ;
+      color: rgb(255, 255, 255) ;
+    }
+
+    #board {
+      display: grid ;
+      grid-template-rows: 1fr 1fr 1fr ;
+      grid-gap: 3px ;
+      width: 400px ;
+      height: 400px ;
+      background: rgb(255, 255, 255) ;
+    }
+
+    .row {
+      display: grid ;
+      grid-template-columns: 1fr 1fr 1fr ;
+      grid-gap: 3px ;
+    }
+
+    .grid {
+      display: flex ;
+      align-items: center ;
+      justify-content: center ;
+      background: rgb(0, 0, 0) ;
+      cursor: pointer ;
+    }
+
+    #player-won {
+      position: absolute ;
+      bottom: 10px ;
+      font-size: 30px ;
+      font-weight: bold ;
+      color: rgb(255, 255, 255) ;
+    }
+  </style>
+</head>
+<body>
+  <div id="text">
+    TICTACTOE CLASSIC
+  </div>
+
+  <div id="board">
+    <div class="row">
+      <div class="grid" data-grid-position="0">
+
+      </div>
+
+      <div class="grid" data-grid-position="1">
+
+      </div>
+
+      <div class="grid" data-grid-position="2">
+
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="grid" data-grid-position="3">
+
+      </div>
+
+      <div class="grid" data-grid-position="4">
+
+      </div>
+
+      <div class="grid" data-grid-position="5">
+
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="grid" data-grid-position="6">
+
+      </div>
+
+      <div class="grid" data-grid-position="7">
+
+      </div>
+
+      <div class="grid" data-grid-position="8">
+
+      </div>
+    </div>
+  </div>
+
+  <button id="rematch-button">
+    REMATCH
+  </button>
+
+  <div id="player-won">
+
+  </div>
+
+  <script>
+    const grids = document.querySelectorAll('.grid') ;
+    const gridPositionArray = [0, 0, 0, 0, 0, 0, 0, 0, 0] ;
+    const winningCombinations = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [7, 4, 1], [8, 5, 2], [0, 4, 8], [2, 4, 6]] ;
+    const rematchButton = document.getElementById('rematch-button') ;
+
+    let turnX = true ;
+    let gameWon = false ;
+
+    grids.forEach(grid => {
+      grid.addEventListener('click', handleGridClick) ;
+    }) ;
+
+    rematchButton.addEventListener('click', restartGame) ;
+
+    function handleGridClick() {
+      const grid = event.currentTarget ;
+
+      if (!grid.classList.contains('no-change') && !gameWon) {
+        const gridPosition = grid.dataset.gridPosition ;
+
+        if (turnX) {
+          grid.classList.add('no-change') ;
+          turnX = false ;
+
+          grid.innerHTML = `
+            <svg width="100" height="100" stroke="rgb(255, 255, 255)" stroke-width="15" stroke-linecap="round">
+              <path d="M15,15 L85,85" />
+              <path d="M85,15 L15,85" />
+            </svg>
+          ` ;
+
+          gridPositionArray[gridPosition] = 1 ;
+          checkWin(1) ;
+          handleComputerTurn() ;
+        }
+      }
+    }
+
+    function handleComputerTurn() {
+      const result = checkWinner() ;
+      if (result === null) {
+        const bestMove = getBestMove() ;
+        const grid = grids[bestMove] ;
+
+        turnX = true ;
+
+        grid.classList.add('no-change') ;
+        grid.innerHTML = `
+          <svg width="100" height="100" stroke="rgb(255, 255, 255)" stroke-width="15" stroke-linecap="round">
+            <circle cx="50" cy="50" r="40" />
+          </svg>
+        ` ;
+
+        gridPositionArray[grid.dataset.gridPosition] = 2 ;
+        checkWin(2) ;
+      }
+    }
+
+    function getBestMove() {
+      let bestMove ;
+      let bestScore = -Infinity ;
+
+      for (let i = 0 ; i < gridPositionArray.length ; i++) {
+        if (gridPositionArray[i] === 0) {
+          gridPositionArray[i] = 2 ;
+          const score = minimax(gridPositionArray, 0, false) ;
+          gridPositionArray[i] = 0 ;
+
+          if (score > bestScore) {
+            bestScore = score ;
+            bestMove = i ;
+          }
+        }
+      }
+
+      return bestMove ;
+    }
+
+    function minimax(gridPositionArray, depth, isMaximizing) {
+      const result = checkWinner() ;
+      if (result !== null) {
+        if (result === 1) {
+          return -1 ;
+        } else if (result === 2) {
+          return 1 ;
+        } else {
+          return 0 ;
+        }
+      }
+
+      if (isMaximizing) {
+        let bestScore = -Infinity ;
+        for (let i = 0 ; i < gridPositionArray.length ; i++) {
+          if (gridPositionArray[i] === 0) {
+            gridPositionArray[i] = 2 ;
+            const score = minimax(gridPositionArray, depth + 1, false) ;
+            gridPositionArray[i] = 0 ;
+
+            bestScore = Math.max(score, bestScore) ;
+          }
+        }
+
+        return bestScore ;
+      } else {
+        let bestScore = Infinity ;
+        for (let i = 0 ; i < gridPositionArray.length ; i++) {
+          if (gridPositionArray[i] === 0) {
+            gridPositionArray[i] = 1 ;
+            const score = minimax(gridPositionArray, depth + 1, true) ;
+            gridPositionArray[i] = 0 ;
+
+            bestScore = Math.min(score, bestScore) ;
+          }
+        }
+
+        return bestScore ;
+      }
+    }
+
+    function restartGame() {
+      gridPositionArray.forEach((grid, index) => {
+        gridPositionArray[index] = 0 ;
+      }) ;
+
+      turnX = true ;
+      gameWon = false ;
+
+      grids.forEach(grid => {
+        grid.innerHTML = '' ;
+        grid.classList.remove('no-change') ;
+        grid.addEventListener('click', handleGridClick) ;
+
+        document.getElementById('player-won').innerHTML = '' ;
+      }) ;
+    }
+
+    function checkWinner() {
+      for (const combination of winningCombinations) {
+        const [a, b, c] = combination ;
+
+        if (
+          gridPositionArray[a] &&
+          gridPositionArray[a] ===
+          gridPositionArray[b] && 
+          gridPositionArray[a] === 
+          gridPositionArray[c]
+        ) {
+          return gridPositionArray[a] ;
+        }
+      }
+
+      if (gridPositionArray.includes(0)) {
+        return null ;
+      } else {
+        return 0 ;
+      }
+    }
+
+    function checkWin(playerWon) {
+      if (!gridPositionArray.includes(0)) {
+        gameWon = true ;
+
+        document.getElementById('player-won').innerHTML = 'GAME DRAWN!' ;
+
+        grids.forEach(grid => {
+          grid.removeEventListener('click', handleGridClick) ;
+        }) ;
+      }
+
+      for (const combination of winningCombinations) {
+        const [a, b, c] = combination ;
+
+        if (
+          gridPositionArray[a] === playerWon &&
+          gridPositionArray[b] === playerWon &&
+          gridPositionArray[c] === playerWon
+        ) {
+          gameWon = true ;
+          document.getElementById('player-won').innerHTML = `PLAYER ${playerWon} WON!` ;
+
+          grids.forEach(grid => {
+            grid.removeEventListener('click', handleGridClick) ;
+          }) ;
+
+          break ;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
